@@ -4,7 +4,11 @@ function AiActuator() {
   this.worker = new Worker("js/worker.js");
 
   this.worker.onmessage = function (oEvent) {
-    AiInputManager.emitter.emit('move', oEvent.data.move);
+    if (typeof oEvent.data.move == 'undefined') {
+      AiInputManager.emitter.emit('restart');
+    } else {
+      AiInputManager.emitter.emit('move', oEvent.data.move);
+    }
   };
 }
 
