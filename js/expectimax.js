@@ -7,7 +7,7 @@ function expectimax(node, depth) {
 
   if (node.isPlayer()) {
     curr = { alpha: -Infinity };
-    node.children().forEach(function(child) {
+    node.eachChild(function(child) {
       var em = expectimax(child, depth - 1);
       if (em.alpha > curr.alpha) {
         curr.alpha = em.alpha;
@@ -16,7 +16,7 @@ function expectimax(node, depth) {
     });
   } else if (node.isChance()) {
     curr = { alpha: 0 };
-    node.children().forEach(function(child) {
+    node.eachChild(function(child) {
       curr.alpha += (child.probability * expectimax(child, depth - 1).alpha);
     });
   }
@@ -33,7 +33,7 @@ function Node(moveSimulator, playerTurn, move, probability) {
 }
 
 Node.prototype.isTerminal = function() {
-  return !this.children().length;
+  return !this.moveSimulator.movesAvailable();
 }
 
 Node.prototype.isPlayer = function() {
@@ -44,64 +44,28 @@ Node.prototype.isChance = function() {
   return !this.playerTurn;
 }
 
-Node.prototype.children = function() {
+Node.prototype.eachChild = function(callback) {
   var self = this;
 
-  if (!self.cachedChildren) {
-    self.cachedChildren = []
+  if (self.isChance()) {
+    var numberOfPeers = self.moveSimulator.availableCells() * 2;
+    self.moveSimulator.eachAvailableCell(function(x, y) {
+      var moveSimulator2 = new MoveSimulator(self.moveSimulator);
+      var moveSimulator4 = new MoveSimulator(self.moveSimulator);
 
+      moveSimulator2.insertTile(x, y, 2);
+      moveSimulator4.insertTile(x, y, 4);
 
-    if (self.isChance()) {
-      var cells = self.moveSimulator.grid.availableCells();
-      var numberOfPeers = cells.length * 2;
-
-      self.cachedChildren = cells.map(function(cell) {
-        var moveSimulator = new MoveSimulator(self.moveSimulator);
-        moveSimulator.grid.insertTile(new Tile(cell, 2));
-
-        return new Node(moveSimulator, true, null, 0.9 / numberOfPeers)
-      });
-
-      self.cachedChildren.concat(cells.map(function(cell) {
-        var moveSimulator = new MoveSimulator(self.moveSimulator);
-        moveSimulator.grid.insertTile(new Tile(cell, 4));
-        return new Node(moveSimulator, true, null, 0.1 / numberOfPeers)
-      }));
-    } else if (self.isPlayer()) {
-      // 0: up, 1: right, 2: down, 3: left
-      self.cachedChildren = _.filter([0, 1, 2, 3].map(function(move) {
-        var moveSimulator = new MoveSimulator(self.moveSimulator);
-        moveSimulator.move(move);
-        if (moveSimulator.moved) {
-          return new Node(moveSimulator, false, move, null);
-        } else {
-          return null;
-        }
-      }), Boolean);
-    }
+      callback(new Node(moveSimulator2, true, null, 0.9 / numberOfPeers));
+      callback(new Node(moveSimulator4, true, null, 0.1 / numberOfPeers));
+    });
+  } else if (self.isPlayer()) {
+    [0, 1, 2, 3].forEach(function(direction) {
+      var moveSimulator = new MoveSimulator(self.moveSimulator);
+      moveSimulator.move(direction);
+      if (moveSimulator.moved) {
+        callback(new Node(moveSimulator, false, direction, null));
+      }
+    });
   }
-
-  return self.cachedChildren;
-}
-
-Node.prototype.shuffle = function(array) {
-  var currentIndex = array.length
-    , temporaryValue
-    , randomIndex
-    ;
-
-  // While there remain elements to shuffle...
-  while (0 !== currentIndex) {
-
-    // Pick a remaining element...
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex -= 1;
-
-    // And swap it with the current element.
-    temporaryValue = array[currentIndex];
-    array[currentIndex] = array[randomIndex];
-    array[randomIndex] = temporaryValue;
-  }
-
-  return array;
 }

@@ -7,150 +7,76 @@ importScripts("lodash.min.js",
               "expectimax.js");
 
 onmessage = function (oEvent) {
-  var fakeGameManager = {
-    grid: {
-      serialize: function() { return oEvent.data.grid; },
-    },
-    score: oEvent.data.score
+  var fakeMoveSimulator = {
+    cells: _.map(_.flatten(oEvent.data.grid.cells), function(cell) {
+      return cell ? cell.value : null;
+    }),
+    score: oEvent.data.score,
+    size: oEvent.data.grid.size
   };
 
-  var moveSimulator = new MoveSimulator(fakeGameManager);
+  var moveSimulator = new MoveSimulator(fakeMoveSimulator);
   var node = new Node(moveSimulator, true);
   var result;
 
-  var numberOfEmptyCells = moveSimulator.grid.availableCells().length;
+  // do {
+  //   depth += 2;
+  //   result = expectimax(node, depth);
+  // } while (((new Date).getTime() - startTime) < 50)
 
-  if (numberOfEmptyCells > 9) {
-    result = expectimax(node, 5);
-  } else if (numberOfEmptyCells > 5) {
-    result = expectimax(node, 5);
-  } else if (numberOfEmptyCells > 3) {
-    result = expectimax(node, 5);
-  } else {
-    result = expectimax(node, 5);
-  }
+  setTimeout(function() {
+    result = expectimax(node, 9);
 
-  //console.log(heuristic(node));
+    console.log(JSON.stringify(result));
 
-  postMessage(result);
+    postMessage(result);
+  }, 500);
 };
 
-function heuristic(node) {
+function heuristic(node, log) {
   if (!node.moveSimulator.movesAvailable()) {
     return -1E+100;
   }
 
-  // favor empty cells
-  var alpha = 0;
+  var alpha = node.moveSimulator.score;
 
-  // favor highest value on an edge
-  //var high = highestValue(node.moveSimulator.grid);
+  // var map = {};
+  // node.moveSimulator.eachOccupiedCell(function(x, y, value) {
+  //   if (!map[value + '']) {
+  //     map[value + ''] = [];
+  //   }
 
+  //   map[value + ''].push({x: x, y: y});
+  // });
 
-  alpha += emptyCells(node.moveSimulator.grid)
-  //alpha += highestOnEdge(node.moveSimulator.grid, high);
-  //alpha += highestInCorner(node.moveSimulator.grid, high);
-  //alpha += hasUncombinedValues(node.moveSimulator.grid);
-  alpha += distanceBetweenValues(node.moveSimulator.grid);
+  // var keys = _.keys(map);
+  // var high = _.last(keys);
 
-  return alpha;
-}
+  // var corners = 0;
 
-function emptyCells(grid) {
-  return -1 * Math.pow(16 - grid.availableCells().length, 4);
-}
+  // _.forEach(map[high], function(highs) {
+  //   var distanceFromCorner = Math.min(
+  //         distance({x: 0, y: 0}, highs),
+  //         distance({x: 0, y: 3}, highs),
+  //         distance({x: 3, y: 0}, highs),
+  //         distance({x: 3, y: 3}, highs));
 
-function highestValue(grid) {
-  var value = 0;
-  grid.eachCell(function(x, y, tile) {
-    if (tile) {
-      value = Math.max(value, tile.value);
-    }
-  });
+  //   corners += distanceFromCorner * high;
+  // });
 
-  return value;
-}
+  // alpha -= corners;
 
-function highestOnEdge(grid, high) {
-  var alpha = 0;
-  grid.eachCell(function(x, y, tile) {
-    if (tile) {
-      if ((tile.value == high) && (x == 0 || x == 3 || y == 0 || y == 3)) {
-        alpha += 1;
-      }
-    }
-  });
+  // var distances = 0;
 
-  return alpha;
-}
+  // _.forEachRight(_.first(keys, keys.length - 1), function(key) {
+  //   _.forEach(map[key], function(value) {
+  //     _.forEach(map[high], function(highs) {
+  //       distances += (distance(highs, value) - 1) * key;
+  //     });
+  //   });
+  // });
 
-function highestInCorner(grid, high) {
-  var alpha = 0;
-  grid.eachCell(function(x, y, tile) {
-    if (tile) {
-      if ((tile.value == high) && ((x == 0 && y == 0) ||
-                                  (x == 0 && y == 3) ||
-                                  (x == 3 && y == 0) ||
-                                  (x == 3 && y == 3))) {
-        alpha += getBaseLog(high, 2) * 8;
-      }
-    }
-  });
-
-  return alpha;
-}
-
-function hasUncombinedValues(grid) {
-  var map = {};
-  grid.eachCell(function(x, y, tile) {
-    if (tile) {
-      map[tile.value + ''] = map[tile.value + ''] ? map[tile.value + ''] + 1 : 1;
-    }
-  });
-
-  var alpha = 0;
-
-  _.forOwn(map, function(value, key) {
-    alpha -= ((value - 1) * 2 * getBaseLog(key, 2));
-  });
-
-  return alpha;
-}
-
-function distanceBetweenValues(grid) {
-  var map = {};
-  grid.eachCell(function(x, y, tile) {
-    if (tile) {
-      if (!map[tile.value + '']) {
-        map[tile.value + ''] = [];
-      }
-
-      map[tile.value + ''].push(tile);
-    }
-  });
-
-  var alpha = 0;
-  var temp;
-
-  var high = _.last(_.keys(map));
-
-  if (map[high].length == 1) {
-    alpha -= Math.pow(Math.min(
-          distance({x: 0, y: 0}, map[high][0]),
-          distance({x: 0, y: 3}, map[high][0]),
-          distance({x: 3, y: 0}, map[high][0]),
-          distance({x: 3, y: 3}, map[high][0])), 2) * high * 1024;
-  }
-
-  _.forOwnRight(map, function(value, key) {
-    if (value.length > 1) {
-      alpha -= key * 64;
-    } else if (temp) {
-      alpha -= Math.pow((distance(temp, value[0]) - 1), 2) * key * 64;
-    }
-
-    temp = value[0];
-  });
+  // alpha -= distances;
 
   return alpha;
 }
