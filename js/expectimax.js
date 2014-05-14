@@ -28,8 +28,6 @@ function expectimax(node, depth) {
 }
 
 function Node(moveSimulator, playerTurn, move, probability) {
-  self.nodeCount++;
-  // game state
   this.moveSimulator = moveSimulator;
   this.playerTurn = playerTurn;
   this.move = move;

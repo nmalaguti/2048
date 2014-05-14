@@ -14,7 +14,6 @@ MoveSimulator.prototype.move = function(direction) {
   var x;
   var y;
   var size = this.size;
-  var size = this.size;
   var cells = this.cells;
   var value;
   var i;

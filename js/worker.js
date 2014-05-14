@@ -21,23 +21,16 @@ onmessage = function (oEvent) {
   var depth = 1;
 
   var startTime = (new Date).getTime();
-  self.nodeCount = 0;
 
   do {
     depth += 2;
     result = expectimax(node, depth);
   } while (((new Date).getTime() - startTime) * 20 < 1000);
 
-  // result = expectimax(node, depth);
-  // console.log('nodeCount: ' + self.nodeCount);
-
-  // console.log('NPS: ' + (self.nodeCount / (((new Date).getTime() - startTime) / 1000)));
-  // console.log(depth);
-
   postMessage(result);
 };
 
-function heuristic(node, log) {
+function heuristic(node) {
   if (!node.moveSimulator.movesAvailable()) {
     return -1E+100;
   }
