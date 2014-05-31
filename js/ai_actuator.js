@@ -25,11 +25,19 @@ AiActuator.prototype.getNextMove = function(grid, metadata) {
 
   var moveSimulator = new MoveSimulator(fakeMoveSimulator);
   var node = new Node(moveSimulator, true);
-  var depth = 5;
+  var depth = 3;
   var result = {};
 
   this.nodeCount = 0;
   var startTime = (new Date).getTime();
+
+//  this.expectimax(node, 9, function(result) {
+//    if (typeof result.move == 'undefined') {
+//      AiInputManager.emitter.emit('restart');
+//    } else {
+//      AiInputManager.emitter.emit('move', result.move);
+//    }
+//  }.bind(this));
 
   async.doWhilst(function(next) {
     depth += 2;
@@ -38,9 +46,9 @@ AiActuator.prototype.getNextMove = function(grid, metadata) {
       next();
     }.bind(this));
   }.bind(this), function() {
-    return ((new Date).getTime() - startTime) * 20 < 1000;
+    return ((new Date).getTime() - startTime) < 75;
   }.bind(this), function(err) {
-    console.log(this.nodeCount / ((new Date).getTime() - startTime) * 1000);
+    console.log(depth);
 
     if (typeof result.move == 'undefined') {
       AiInputManager.emitter.emit('restart');
