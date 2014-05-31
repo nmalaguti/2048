@@ -1,32 +1,98 @@
 function AiActuator() {
   HTMLActuator.apply(this);
 
-  this.worker = new Worker("js/worker.js");
+  this.workers = [new Worker("js/worker.js")];
+  this.nodeCount = 0;
 
-  this.worker.onmessage = function (oEvent) {
-    if (typeof oEvent.data.move == 'undefined') {
-      AiInputManager.emitter.emit('restart');
-    } else {
-      AiInputManager.emitter.emit('move', oEvent.data.move);
-    }
-  };
+  navigator.getHardwareConcurrency(function(cores) {
+    this.workers = _.map(_.range(cores - 1), function(core) {
+      return new Worker("js/worker.js");
+    });
+  }.bind(this));
 }
 
 AiActuator.prototype = Object.create(HTMLActuator.prototype);
 AiActuator.prototype.constructor = AiActuator;
 
+AiActuator.prototype.getNextMove = function(grid, metadata) {
+  var fakeMoveSimulator = {
+    cells: _.map(_.flatten(grid.serialize().cells), function(cell) {
+      return cell ? cell.value : null;
+    }),
+    score: metadata.score,
+    size: grid.size
+  };
+
+  var moveSimulator = new MoveSimulator(fakeMoveSimulator);
+  var node = new Node(moveSimulator, true);
+  var depth = 5;
+  var result = {};
+
+  this.nodeCount = 0;
+  var startTime = (new Date).getTime();
+
+  async.doWhilst(function(next) {
+    depth += 2;
+    this.expectimax(node, depth, function(res) {
+      result = res;
+      next();
+    }.bind(this));
+  }.bind(this), function() {
+    return ((new Date).getTime() - startTime) * 20 < 1000;
+  }.bind(this), function(err) {
+    console.log(this.nodeCount / ((new Date).getTime() - startTime) * 1000);
+
+    if (typeof result.move == 'undefined') {
+      AiInputManager.emitter.emit('restart');
+    } else {
+      AiInputManager.emitter.emit('move', result.move);
+    }
+  }.bind(this));
+}
+
+AiActuator.prototype.expectimax = function(node, depth, callback) {
+  if (node.isTerminal()) {
+    callback({ alpha: -1E+100 });
+  } else {
+    var children = node.children();
+    var results = [];
+    async.mapLimit(children, this.workers.length, function(child, next) {
+      var worker = this.workers.pop();
+
+      worker.onmessage = function (oEvent) {
+        this.nodeCount += oEvent.data.nodeCount;
+        results.push({
+          alpha: oEvent.data.alpha,
+          move: child.move
+        });
+        this.workers.push(worker);
+        next();
+      }.bind(this);
+
+      worker.postMessage({
+        cells: child.moveSimulator.cells.concat(),
+        score: child.moveSimulator.score,
+        size: child.moveSimulator.size,
+        depth: depth - 1
+      });
+    }.bind(this), function(err) {
+      var curr = { alpha: -Infinity };
+      results.forEach(function(em) {
+        if (em.alpha > curr.alpha) {
+          curr = em;
+        }
+      });
+      callback(curr);
+    });
+  }
+}
+
 AiActuator.prototype.actuate = function(grid, metadata) {
   if (!metadata.terminated) {
-    this.worker.postMessage({
-      grid: grid.serialize(),
-      score: metadata.score
-    });
+    this.getNextMove(grid, metadata);
   } else {
     this.continueState = function() {
-      this.worker.postMessage({
-        grid: grid.serialize(),
-        score: metadata.score
-      });
+      this.getNextMove(grid, metadata);
     }.bind(this);
   }
 

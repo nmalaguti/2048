@@ -27,7 +27,45 @@ function expectimax(node, depth) {
   return curr;
 }
 
+function expectimaxAsync(node, depth, callback) {
+  if (depth === 0 || node.isTerminal()) {
+    if (depth !== 0) {
+      callback({ alpha: -1E+100 });
+    } else {
+      callback({ alpha: heuristic(node) });
+    }
+  } else {
+    var curr;
+
+    if (node.isPlayer()) {
+      curr = { alpha: -Infinity };
+      async.each(node.children(), function(child, next) {
+        expectimax(child, depth - 1, function(em) {
+          if (em.alpha > curr.alpha) {
+            curr.alpha = em.alpha;
+            curr.move = child.move;
+          }
+          next();
+        });
+      }, function(err) {
+        callback(curr);
+      });
+    } else if (node.isChance()) {
+      curr = { alpha: 0 };
+      async.each(node.children(), function(child, next) {
+        expectimax(child, depth - 1, function(em) {
+          curr.alpha += (child.probability * em.alpha);
+          next();
+        });
+      }, function(err) {
+        callback(curr);
+      });
+    }
+  }
+}
+
 function Node(moveSimulator, playerTurn, move, probability) {
+  self.nodeCount++;
   this.moveSimulator = moveSimulator;
   this.playerTurn = playerTurn;
   this.move = move;
