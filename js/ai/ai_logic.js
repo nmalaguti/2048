@@ -12,6 +12,5 @@ function AiLogic(depthUpdate) {
 }
 
 AiLogic.prototype.boardState = function(state) {
-
   this.worker.postMessage(state);
 }
