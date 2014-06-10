@@ -1,15 +1,18 @@
 function AiActuator() {
   HTMLActuator.apply(this);
 
+  this.depthContainer = document.querySelector(".depth-container");
+
   this.worker = new Worker("js/worker.js");
 
   this.worker.onmessage = function (oEvent) {
     if (typeof oEvent.data.move == 'undefined') {
       AiInputManager.emitter.emit('restart');
     } else {
+      this.updateDepth(oEvent.data.depth);
       AiInputManager.emitter.emit('move', oEvent.data.move);
     }
-  };
+  }.bind(this);
 }
 
 AiActuator.prototype = Object.create(HTMLActuator.prototype);
@@ -47,3 +50,9 @@ AiActuator.prototype.message = function (won) {
     }, 5000);
   }
 }
+
+AiActuator.prototype.updateDepth = function (depth) {
+  this.clearContainer(this.depthContainer);
+
+  this.depthContainer.textContent = Math.floor(depth/2);
+};

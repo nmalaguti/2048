@@ -82,7 +82,7 @@ h1.title {
   float: right;
   text-align: right; }
 
-.score-container, .best-container {
+.score-container, .best-container, .depth-container {
   position: relative;
   display: inline-block;
   background: #bbada0;
@@ -95,7 +95,7 @@ h1.title {
   color: white;
   margin-top: 8px;
   text-align: center; }
-  .score-container:after, .best-container:after {
+  .score-container:after, .best-container:after, .depth-container:after {
     position: absolute;
     width: 100%;
     top: 10px;
@@ -105,7 +105,7 @@ h1.title {
     line-height: 13px;
     text-align: center;
     color: #eee4da; }
-  .score-container .score-addition, .best-container .score-addition {
+  .score-container .score-addition, .best-container .score-addition, .depth-container .score-addition {
     position: absolute;
     right: 30px;
     color: red;
@@ -126,6 +126,9 @@ h1.title {
 
 .best-container:after {
   content: "Best"; }
+
+.depth-container:after {
+  content: "Depth"; }
 
 p {
   margin-top: 0;
