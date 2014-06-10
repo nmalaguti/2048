@@ -23,6 +23,7 @@ onmessage = function (oEvent) {
   do {
     depth += 2;
     result = expectimax(node, depth);
+    result.depth = depth;
   } while (((new Date).getTime() - startTime) * 20 < 1000);
 
   postMessage(result);

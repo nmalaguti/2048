@@ -1,7 +1,7 @@
 function expectimax(node, depth) {
   if (depth === 0 || node.isTerminal()) {
     if (depth !== 0) {
-      return { alpha: -1E+100 };
+      return { alpha: -1E+50 };
     }
     return { alpha: heuristic(node) };
   }
@@ -9,7 +9,7 @@ function expectimax(node, depth) {
   var curr;
 
   if (node.isPlayer()) {
-    curr = { alpha: -Infinity };
+    curr = { alpha: -1E+50 };
     node.children().forEach(function(child) {
       var em = expectimax(child, depth - 1);
       if (em.alpha > curr.alpha) {
