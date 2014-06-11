@@ -1,5 +1,6 @@
 importScripts("lodash.min.js",
               "async.js",
+              "bind_polyfill.js",
               "move_simulator.js",
               "heuristic.js",
               "expectimax.js");

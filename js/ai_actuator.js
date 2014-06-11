@@ -1,13 +1,14 @@
 function AiActuator() {
   HTMLActuator.apply(this);
 
+  this.depthContainer = document.querySelector(".depth-container");
+
   this.workers = [new Worker("js/worker.js")];
-  this.nodeCount = 0;
 
   navigator.getHardwareConcurrency(function(cores) {
-    this.workers = _.map(_.range(cores - 1), function(core) {
+    this.workers = this.workers.concat(_.map(_.range(cores - 1), function(core) {
       return new Worker("js/worker.js");
-    });
+    }));
   }.bind(this));
 }
 
@@ -28,16 +29,7 @@ AiActuator.prototype.getNextMove = function(grid, metadata) {
   var depth = 3;
   var result = {};
 
-  this.nodeCount = 0;
   var startTime = (new Date).getTime();
-
-//  this.expectimax(node, 9, function(result) {
-//    if (typeof result.move == 'undefined') {
-//      AiInputManager.emitter.emit('restart');
-//    } else {
-//      AiInputManager.emitter.emit('move', result.move);
-//    }
-//  }.bind(this));
 
   async.doWhilst(function(next) {
     depth += 2;
@@ -48,11 +40,10 @@ AiActuator.prototype.getNextMove = function(grid, metadata) {
   }.bind(this), function() {
     return ((new Date).getTime() - startTime) < 75;
   }.bind(this), function(err) {
-    console.log(depth);
-
     if (typeof result.move == 'undefined') {
       AiInputManager.emitter.emit('restart');
     } else {
+      this.updateDepth(depth);
       AiInputManager.emitter.emit('move', result.move);
     }
   }.bind(this));
@@ -60,7 +51,7 @@ AiActuator.prototype.getNextMove = function(grid, metadata) {
 
 AiActuator.prototype.expectimax = function(node, depth, callback) {
   if (node.isTerminal()) {
-    callback({ alpha: -1E+100 });
+    callback({ alpha: -1E+50 });
   } else {
     var children = node.children();
     var results = [];
@@ -68,7 +59,6 @@ AiActuator.prototype.expectimax = function(node, depth, callback) {
       var worker = this.workers.pop();
 
       worker.onmessage = function (oEvent) {
-        this.nodeCount += oEvent.data.nodeCount;
         results.push({
           alpha: oEvent.data.alpha,
           move: child.move
@@ -84,7 +74,7 @@ AiActuator.prototype.expectimax = function(node, depth, callback) {
         depth: depth - 1
       });
     }.bind(this), function(err) {
-      var curr = { alpha: -Infinity };
+      var curr = { alpha: -1E+50 };
       results.forEach(function(em) {
         if (em.alpha > curr.alpha) {
           curr = em;
@@ -121,3 +111,9 @@ AiActuator.prototype.message = function (won) {
     }, 5000);
   }
 }
+
+AiActuator.prototype.updateDepth = function (depth) {
+  this.clearContainer(this.depthContainer);
+
+  this.depthContainer.textContent = Math.floor(depth/2);
+};
