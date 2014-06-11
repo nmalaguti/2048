@@ -6,6 +6,10 @@ function AiActuator() {
   this.workers = [new Worker("js/worker.js")];
 
   navigator.getHardwareConcurrency(function(cores) {
+    if (cores > 4) {
+      cores = 4;
+    }
+
     this.workers = this.workers.concat(_.map(_.range(cores - 1), function(core) {
       return new Worker("js/worker.js");
     }));
