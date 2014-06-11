@@ -3,33 +3,94 @@ function AiActuator() {
 
   this.depthContainer = document.querySelector(".depth-container");
 
-  this.worker = new Worker("js/worker.js");
+  this.workers = [new Worker("js/worker.js")];
 
-  this.worker.onmessage = function (oEvent) {
-    if (typeof oEvent.data.move == 'undefined') {
-      AiInputManager.emitter.emit('restart');
-    } else {
-      this.updateDepth(oEvent.data.depth);
-      AiInputManager.emitter.emit('move', oEvent.data.move);
-    }
-  }.bind(this);
+  navigator.getHardwareConcurrency(function(cores) {
+    this.workers = this.workers.concat(_.map(_.range(cores - 1), function(core) {
+      return new Worker("js/worker.js");
+    }));
+  }.bind(this));
 }
 
 AiActuator.prototype = Object.create(HTMLActuator.prototype);
 AiActuator.prototype.constructor = AiActuator;
 
+AiActuator.prototype.getNextMove = function(grid, metadata) {
+  var fakeMoveSimulator = {
+    cells: _.map(_.flatten(grid.serialize().cells), function(cell) {
+      return cell ? cell.value : null;
+    }),
+    score: metadata.score,
+    size: grid.size
+  };
+
+  var moveSimulator = new MoveSimulator(fakeMoveSimulator);
+  var node = new Node(moveSimulator, true);
+  var depth = 3;
+  var result = {};
+
+  var startTime = (new Date).getTime();
+
+  async.doWhilst(function(next) {
+    depth += 2;
+    this.expectimax(node, depth, function(res) {
+      result = res;
+      next();
+    }.bind(this));
+  }.bind(this), function() {
+    return ((new Date).getTime() - startTime) < 75;
+  }.bind(this), function(err) {
+    if (typeof result.move == 'undefined') {
+      AiInputManager.emitter.emit('restart');
+    } else {
+      this.updateDepth(depth);
+      AiInputManager.emitter.emit('move', result.move);
+    }
+  }.bind(this));
+}
+
+AiActuator.prototype.expectimax = function(node, depth, callback) {
+  if (node.isTerminal()) {
+    callback({ alpha: -1E+50 });
+  } else {
+    var children = node.children();
+    var results = [];
+    async.mapLimit(children, this.workers.length, function(child, next) {
+      var worker = this.workers.pop();
+
+      worker.onmessage = function (oEvent) {
+        results.push({
+          alpha: oEvent.data.alpha,
+          move: child.move
+        });
+        this.workers.push(worker);
+        next();
+      }.bind(this);
+
+      worker.postMessage({
+        cells: child.moveSimulator.cells.concat(),
+        score: child.moveSimulator.score,
+        size: child.moveSimulator.size,
+        depth: depth - 1
+      });
+    }.bind(this), function(err) {
+      var curr = { alpha: -1E+50 };
+      results.forEach(function(em) {
+        if (em.alpha > curr.alpha) {
+          curr = em;
+        }
+      });
+      callback(curr);
+    });
+  }
+}
+
 AiActuator.prototype.actuate = function(grid, metadata) {
   if (!metadata.terminated) {
-    this.worker.postMessage({
-      grid: grid.serialize(),
-      score: metadata.score
-    });
+    this.getNextMove(grid, metadata);
   } else {
     this.continueState = function() {
-      this.worker.postMessage({
-        grid: grid.serialize(),
-        score: metadata.score
-      });
+      this.getNextMove(grid, metadata);
     }.bind(this);
   }
 
