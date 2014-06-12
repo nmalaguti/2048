@@ -32,6 +32,8 @@ AiActuator.prototype.getNextMove = function(grid, metadata) {
   var node = new Node(moveSimulator, true);
   var depth = 3;
   var result = {};
+  var max = Math.max.apply(Math.max, fakeMoveSimulator.cells);
+  var timeout = Math.floor(0.02 * max);
 
   var startTime = (new Date).getTime();
 
@@ -42,7 +44,7 @@ AiActuator.prototype.getNextMove = function(grid, metadata) {
       next();
     }.bind(this));
   }.bind(this), function() {
-    return ((new Date).getTime() - startTime) < 75;
+    return ((new Date).getTime() - startTime) < timeout;
   }.bind(this), function(err) {
     if (typeof result.move == 'undefined') {
       AiInputManager.emitter.emit('restart');
