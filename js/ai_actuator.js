@@ -30,7 +30,7 @@ AiActuator.prototype.getNextMove = function(grid, metadata) {
 
   var moveSimulator = new MoveSimulator(fakeMoveSimulator);
   var node = new Node(moveSimulator, true);
-  var depth = 3;
+  var depth = 4;
   var result = {};
   var max = Math.max.apply(Math.max, fakeMoveSimulator.cells);
   var timeout = Math.floor(0.02 * max);
