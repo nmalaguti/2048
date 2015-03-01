@@ -1,7 +1,9 @@
-function AiLogic(depthUpdate) {
+function AiLogic(depthUpdate, updateWorker) {
   this.depthUpdate = depthUpdate;
   this.workers = [new Worker("js/ai/worker.js")];
   this.depth = 4;
+
+  updateWorker(1);
 
   navigator.getHardwareConcurrency(function(cores) {
     if (cores > 4) {
@@ -11,7 +13,8 @@ function AiLogic(depthUpdate) {
     this.workers = this.workers.concat(_.range(cores - 1).map(function(core) {
       return new Worker("js/ai/worker.js");
     }));
-    console.log("workers: " + cores);
+
+    updateWorker(cores);
   }.bind(this));
 }
 

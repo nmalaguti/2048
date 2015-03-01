@@ -2,10 +2,9 @@ function AiActuator() {
   HTMLActuator.apply(this);
 
   this.depthContainer = document.querySelector(".depth-container");
+  this.workerContainer = document.querySelector(".worker-container");
 
-  this.aiLogic = new AiLogic(function(depth) {
-    this.updateDepth(depth);
-  }.bind(this));
+  this.aiLogic = new AiLogic(this.updateDepth.bind(this), this.updateWorker.bind(this));
 }
 
 AiActuator.prototype = Object.create(HTMLActuator.prototype);
@@ -45,4 +44,10 @@ AiActuator.prototype.updateDepth = function (depth) {
   this.clearContainer(this.depthContainer);
 
   this.depthContainer.textContent = Math.floor(depth/2);
+};
+
+AiActuator.prototype.updateWorker = function (workerCount) {
+  this.clearContainer(this.workerContainer);
+
+  this.workerContainer.textContent = workerCount;
 };
