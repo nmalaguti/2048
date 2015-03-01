@@ -18,34 +18,45 @@ Node.prototype.isChance = function() {
 }
 
 Node.prototype.children = function() {
+  if (this.isChance()) {
+    return this.chanceChildren();
+  } else if (this.isPlayer()) {
+    return this.playerChildren();
+  }
+
+  return [];
+}
+
+Node.prototype.playerChildren = function() {
   var self = this;
 
-  var nodes = []
+  return [0, 1, 2, 3].reduce(function(previousValue, currentValue) {
+    var moveSimulator = new MoveSimulator(self.moveSimulator);
+    if (moveSimulator.move(currentValue)) {
+      previousValue.push(new Node(moveSimulator, false, currentValue, null));
+    }
+    return previousValue;
+  }, []);
+}
 
-  if (self.isChance()) {
-    var cells = self.moveSimulator.availableCells();
-    var numberOfPeers = cells.length * 2;
+Node.prototype.chanceChildren = function() {
+  var self = this;
+  var nodes = [];
+  var x;
+  var y;
 
-    nodes = cells.map(function(cell) {
-      var moveSimulator = new MoveSimulator(self.moveSimulator);
-      moveSimulator.insertTile(cell.x, cell.y, 2);
+  for(x = 0; x < this.moveSimulator.size; x++) {
+    for(y = 0; y < this.moveSimulator.size; y++) {
+      if (!this.moveSimulator.cells[x * 4 + y]) {
+        var moveSimulator = new MoveSimulator(this.moveSimulator);
+        moveSimulator.insertTile(x, y, 2);
+        nodes.push(new Node(moveSimulator, true, null, 0.9));
 
-      return new Node(moveSimulator, true, null, 0.9 / numberOfPeers);
-    });
-
-    nodes.concat(cells.map(function(cell) {
-      var moveSimulator = new MoveSimulator(self.moveSimulator);
-      moveSimulator.insertTile(cell.x, cell.y, 4);
-
-      return new Node(moveSimulator, true, null, 0.1 / numberOfPeers);
-    }));
-  } else if (self.isPlayer()) {
-    [0, 1, 2, 3].forEach(function(direction) {
-      var moveSimulator = new MoveSimulator(self.moveSimulator);
-      if (moveSimulator.move(direction)) {
-        nodes.push(new Node(moveSimulator, false, direction, null));
+        moveSimulator = new MoveSimulator(this.moveSimulator);
+        moveSimulator.insertTile(x, y, 4);
+        nodes.push(new Node(moveSimulator, true, null, 0.1));
       }
-    });
+    }
   }
 
   return nodes;

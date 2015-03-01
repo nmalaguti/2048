@@ -6,23 +6,25 @@ function expectimax(node, depth) {
     return { alpha: heuristic(node) };
   }
 
-  var curr;
-
   if (node.isPlayer()) {
-    curr = { alpha: -1E+50 };
-    node.children().forEach(function(child) {
-      var em = expectimax(child, depth - 1);
-      if (em.alpha > curr.alpha) {
-        curr.alpha = em.alpha;
-        curr.move = child.move;
+    return node.children().reduce(function(previousValue, currentValue) {
+      var em = expectimax(currentValue, depth - 1);
+      if (em.alpha > previousValue.alpha) {
+        return {
+          alpha: em.alpha,
+          move: currentValue.move
+        }
       }
-    });
+      return previousValue;
+    }, { alpha: -Infinity });
   } else if (node.isChance()) {
-    curr = { alpha: 0 };
-    node.children().forEach(function(child) {
-      curr.alpha += (child.probability * expectimax(child, depth - 1).alpha);
-    });
-  }
+    var children = node.children();
+    var length = children.length;
 
-  return curr;
+    return {
+      alpha: children.reduce(function(previousValue, currentValue) {
+        return previousValue + (currentValue.probability / length * expectimax(currentValue, depth - 1).alpha);
+      }, 0)
+    };
+  }
 }

@@ -19,6 +19,12 @@ AiLogic.prototype.boardState = function(state) {
   var numWorkers = this.workers.length;
   var startTime = (new Date).getTime();
 
+  if(_.flatten(state.grid.cells).filter(function(cell) {
+    return cell == null;
+  }).length > 11) {
+    this.depth = 4;
+  }
+
   async.mapLimit([0, 1, 2, 3], numWorkers, function(direction, next) {
     var worker = this.workers.pop();
 
@@ -48,7 +54,7 @@ AiLogic.prototype.boardState = function(state) {
       return;
     }
 
-    if (((new Date).getTime() - startTime) < 50) {
+    if (((new Date).getTime() - startTime) < 40) {
       this.depth += 2;
     } else if (((new Date).getTime() - startTime) > 500) {
       this.depth -= 2;
