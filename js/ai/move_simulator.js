@@ -140,20 +140,6 @@ MoveSimulator.prototype.move = function(direction) {
   return moved;
 }
 
-MoveSimulator.prototype.availableCells = function () {
-  var cells = [];
-
-  for(x = 0; x < this.size; x++) {
-    for(y = 0; y < this.size; y++) {
-      if (!this.cells[x * 4 + y]) {
-        cells.push({x: x, y: y});
-      }
-    }
-  }
-
-  return cells;
-};
-
 MoveSimulator.prototype.occupiedCells = function () {
   var cells = [];
 

@@ -3,16 +3,8 @@ function AiActuator() {
 
   this.depthContainer = document.querySelector(".depth-container");
 
-  this.workers = [new Worker("js/worker.js")];
-
-  navigator.getHardwareConcurrency(function(cores) {
-    if (cores > 4) {
-      cores = 4;
-    }
-
-    this.workers = this.workers.concat(_.map(_.range(cores - 1), function(core) {
-      return new Worker("js/worker.js");
-    }));
+  this.aiLogic = new AiLogic(function(depth) {
+    this.updateDepth(depth);
   }.bind(this));
 }
 
@@ -92,12 +84,15 @@ AiActuator.prototype.expectimax = function(node, depth, callback) {
 }
 
 AiActuator.prototype.actuate = function(grid, metadata) {
+  this.continueState = function() {
+    this.aiLogic.boardState({
+      grid: grid.serialize(),
+      score: metadata.score
+    });
+  }.bind(this);
+
   if (!metadata.terminated) {
-    this.getNextMove(grid, metadata);
-  } else {
-    this.continueState = function() {
-      this.getNextMove(grid, metadata);
-    }.bind(this);
+    this.continueState();
   }
 
   HTMLActuator.prototype.actuate.apply(this, arguments);
