@@ -40,7 +40,6 @@ Node.prototype.playerChildren = function() {
 }
 
 Node.prototype.chanceChildren = function() {
-  var self = this;
   var nodes = [];
   var x;
   var y;

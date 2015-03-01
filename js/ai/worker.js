@@ -22,9 +22,13 @@ function doMove(fakeMoveSimulator, direction, depth) {
 }
 
 onmessage = function (oEvent) {
-  var moveSimulator = new MoveSimulator(oEvent.data);
-  var node = new Node(moveSimulator, false);
-  var depth = oEvent.data.depth;
+  var fakeMoveSimulator = {
+    cells: _.map(_.flatten(oEvent.data.grid.cells), function(cell) {
+      return cell ? cell.value : null;
+    }),
+    score: oEvent.data.score,
+    size: oEvent.data.grid.size
+  };
 
   var direction = oEvent.data.direction;
   var depth = oEvent.data.depth;
