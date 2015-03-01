@@ -7,8 +7,8 @@ importScripts("lodash.min.js",
 
 function doMove(fakeMoveSimulator, direction, depth) {
   var result = {
-    moved: false;
-  }
+    moved: false
+  };
 
   var moveSimulator = new MoveSimulator(fakeMoveSimulator);
   if (moveSimulator.move(direction)) {
