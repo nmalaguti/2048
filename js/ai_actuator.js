@@ -3,34 +3,24 @@ function AiActuator() {
 
   this.depthContainer = document.querySelector(".depth-container");
 
-  this.worker = new Worker("js/worker.js");
-
-  this.worker.onmessage = function (oEvent) {
-    if (typeof oEvent.data.move == 'undefined') {
-      AiInputManager.emitter.emit('restart');
-    } else {
-      this.updateDepth(oEvent.data.depth);
-      AiInputManager.emitter.emit('move', oEvent.data.move);
-    }
-  }.bind(this);
+  this.aiLogic = new AiLogic(function(depth) {
+    this.updateDepth(depth);
+  }.bind(this));
 }
 
 AiActuator.prototype = Object.create(HTMLActuator.prototype);
 AiActuator.prototype.constructor = AiActuator;
 
 AiActuator.prototype.actuate = function(grid, metadata) {
-  if (!metadata.terminated) {
-    this.worker.postMessage({
+  this.continueState = function() {
+    this.aiLogic.boardState({
       grid: grid.serialize(),
       score: metadata.score
     });
-  } else {
-    this.continueState = function() {
-      this.worker.postMessage({
-        grid: grid.serialize(),
-        score: metadata.score
-      });
-    }.bind(this);
+  }.bind(this);
+
+  if (!metadata.terminated) {
+    this.continueState();
   }
 
   HTMLActuator.prototype.actuate.apply(this, arguments);

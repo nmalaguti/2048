@@ -1,5 +1,5 @@
 importScripts("lodash.min.js",
-              "bind_polyfill.js",
+              "../bind_polyfill.js",
               "move_simulator.js",
               "heuristic.js",
               "expectimax.js");
@@ -16,7 +16,7 @@ onmessage = function (oEvent) {
   var moveSimulator = new MoveSimulator(fakeMoveSimulator);
   var node = new Node(moveSimulator, true);
   var result;
-  var depth = 1;
+  var depth = 2;
 
   var startTime = (new Date).getTime();
 
