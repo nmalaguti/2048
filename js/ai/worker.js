@@ -3,7 +3,9 @@ importScripts("lodash.min.js",
               "move_simulator.js",
               "node.js",
               "heuristic.js",
-              "expectimax.js");
+              "expectimax.js",
+              "emscripten_core.js",
+              "emscripten_wrapper.js");
 
 function doMove(fakeMoveSimulator, direction, depth) {
   var result = {
@@ -13,7 +15,7 @@ function doMove(fakeMoveSimulator, direction, depth) {
   var moveSimulator = new MoveSimulator(fakeMoveSimulator);
   if (moveSimulator.move(direction)) {
     var node = new Node(moveSimulator, false, direction, null);
-    result = expectimax(node, depth - 1);
+    result.alpha = emscripten_expectimax_alpha(node, depth - 1);
     result.depth = depth;
     result.moved = true;
   }
